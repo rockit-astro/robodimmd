@@ -1,0 +1,96 @@
+#!/usr/bin/env python3.6
+#
+# This file is part of robodimmd.
+#
+# robodimmd is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# robodimmd is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with tngd.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Front end for the ING RoboDIMM seeing monitor for the Warwick La Palma telescopes"""
+
+import datetime
+import threading
+import urllib.request
+import Pyro4
+from warwick.observatory.common import daemons, log
+
+ROBODIMM_URI = 'http://catserver.ing.iac.es/robodimm/robodimm.php'
+QUERY_TIMEOUT = 3
+
+# pylint: disable=broad-except
+# pylint: disable=too-few-public-methods
+# pylint: disable=no-self-use
+
+class RoboDIMMDaemon:
+    """Wraps a web request to the TNG weather feed"""
+    def __init__(self):
+        self._query_error = False
+
+        self._lock = threading.Lock()
+        self._last_measurement_date = None
+        self._last_measurement = None
+
+    @Pyro4.expose
+    def last_measurement(self):
+        """Query the latest valid measurement.
+        May return None if no data is available"""
+        now = datetime.datetime.utcnow()
+
+        # Rate limit queries to once per minute
+        if self._last_measurement_date and (now - self._last_measurement_date).total_seconds() < 60:
+            with self._lock:
+                return self._last_measurement
+
+        try:
+            with urllib.request.urlopen(ROBODIMM_URI, timeout=QUERY_TIMEOUT) as response:
+                # Decode to ascii and force newlines after all html tags
+                html = response.read().decode('ascii').replace('>', '>\n').split('\n')
+
+                # The latest data will be the last line before the </pre>
+                data = html[-3].split()
+
+            date = datetime.datetime.strptime(data[1] + ' ' + data[2], '%Y-%m-%d %H:%M:%S+00')
+
+            # Seeing is estimated as the average of the three smallest values,
+            # matching the NOT weather pages
+            samples = sorted([float(s) for s in data[10:14]])
+            seeing = round((samples[0] + samples[1] + samples[2]) / 3, 2)
+
+            ret = {
+                'date': now.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'seeing': seeing,
+                'seeing_date': date.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'seeing_valid': (now - date).total_seconds() < 900
+            }
+
+            if self._query_error:
+                log.info('robodimmd', 'Restored contact with RoboDIMM API')
+                self._query_error = False
+
+            with self._lock:
+                self._last_measurement = ret
+                self._last_measurement_date = now
+
+            return ret
+        except Exception as exception:
+            print('{} ERROR: failed to query from RoboDIMM API: {}' \
+                  .format(datetime.datetime.utcnow(), str(exception)))
+
+            if not self._query_error:
+                log.error('robodimmd', 'Lost contact with RoboDIMM API')
+                self._query_error = True
+
+            return None
+
+
+if __name__ == '__main__':
+    daemons.ing_robodimm.launch(RoboDIMMDaemon())
