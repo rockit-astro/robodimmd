@@ -1,5 +1,5 @@
 Name:      observatory-robodimm-server
-Version:   1.0.0
+Version:   1.0.1
 Release:   0
 Url:       https://github.com/warwick-one-metre/tngd
 Summary:   Front end for the ING RoboDIMM seeing monitor for the Warwick La Palma telescopes

@@ -43,7 +43,7 @@ class RoboDIMMDaemon:
     def last_measurement(self):
         """Query the latest valid measurement.
         May return None if no data is available"""
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         # Rate limit queries to once per minute
         if self._last_measurement_date and (now - self._last_measurement_date).total_seconds() < 60:
@@ -58,7 +58,9 @@ class RoboDIMMDaemon:
                 # The latest data will be the last line before the </pre>
                 data = html[-3].split()
 
-            date = datetime.datetime.strptime(data[1] + ' ' + data[2], '%Y-%m-%d %H:%M:%S+00')
+            datestring = data[1] + ' ' + data[2] + '00'
+            utc = datetime.timezone.utc
+            date = datetime.datetime.strptime(datestring, '%Y-%m-%d %H:%M:%S%z').astimezone(utc)
 
             # Seeing is estimated as the average of the three smallest values,
             # matching the NOT weather pages
