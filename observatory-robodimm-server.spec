@@ -1,12 +1,12 @@
 Name:      observatory-robodimm-server
-Version:   1.0.1
+Version:   1.0.2
 Release:   0
 Url:       https://github.com/warwick-one-metre/tngd
 Summary:   Front end for the ING RoboDIMM seeing monitor for the Warwick La Palma telescopes
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch
-Requires:  python36, python36-Pyro4, python36-warwick-observatory-common
+Requires:  python3, python3-Pyro4, python3-warwick-observatory-common
 Requires:  observatory-log-client, %{?systemd_requires}
 
 %description
