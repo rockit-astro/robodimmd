@@ -1,4 +1,4 @@
-## ING RoboDIMM daemon [![Travis CI build status](https://travis-ci.org/warwick-one-metre/robodimmd.svg?branch=master)](https://travis-ci.org/warwick-one-metre/robodimmd)
+## ING RoboDIMM daemon
 
 Part of the observatory software for the Warwick La Palma telescopes.
 
@@ -6,7 +6,7 @@ Part of the observatory software for the Warwick La Palma telescopes.
 
 `robodimm` is a commandline utility that shows the ING RoboDIMM seeing.
 
-See [Software Infrastructure](https://github.com/warwick-one-metre/docs/wiki/Software-Infrastructure) for an overview of the W1m software architecture and instructions for developing and deploying the code.
+See [Software Infrastructure](https://github.com/warwick-one-metre/docs/wiki/Software-Infrastructure) for an overview of the observatory software architecture and instructions for developing and deploying the code.
 
 ### Software setup
 After installing `observatory-robodimm-server`, the `robodimmd` must be enabled using:
